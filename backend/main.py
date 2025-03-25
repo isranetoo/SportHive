@@ -1,3 +1,5 @@
+import json
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,10 +14,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Função para carregar dados do arquivo JSON
+def load_sports_data():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(current_dir, "data", "sports.json")
+    
+    try:
+        with open(json_path, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    except Exception as e:
+        print(f"Erro ao carregar arquivo JSON: {e}")
+        # Retorna dados padrão caso haja erro na leitura do arquivo
+        return []
+
 # Rota para enviar dados ao React
 @app.get("/api/dataset")
 def get_data():
-    return {"message": "Olá, React!", "items": ["Israel", 2, 3, 4, 5]}
+    return load_sports_data()
 
 # Rodar o servidor
 if __name__ == "__main__":

@@ -1,28 +1,41 @@
 import { useEffect, useState } from "react";
 import { fetchData } from "./services/api";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import Hero from "./components/Hero";
+import SportsSection from "./components/SportsSection";
+import HighlightsSection from "./components/HighlightsSection";
 
 function App() {
-    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [sports, setSports] = useState([]);
 
     useEffect(() => {
-        fetchData().then((result) => setData(result));
+        const loadData = async () => {
+            try {
+                const data = await fetchData();
+                if (data) {
+                    setSports(data);
+                }
+                setLoading(false);
+            } catch (error) {
+                console.error("Erro ao carregar dados:", error);
+                setLoading(false);
+            }
+        };
+        
+        loadData();
     }, []);
 
     return (
-        <div>
-            <h1>Dados do Backend</h1>
-            {data ? (
-                <div>
-                    <p>{data.message}</p>
-                    <ul>
-                        {data.items.map((item, index) => (
-                            <li key={index}>{item}</li>
-                        ))}
-                    </ul>
-                </div>
-            ) : (
-                <p>Carregando...</p>
-            )}
+        <div className="flex flex-col min-h-screen w-full bg-gray-50">
+            <Navbar />
+            <main className="flex-grow w-full">
+                <Hero />
+                <SportsSection loading={loading} sports={sports} />
+                <HighlightsSection />
+            </main>
+            <Footer />
         </div>
     );
 }
