@@ -5,6 +5,7 @@ from database import get_db
 from models import Sport, User
 from pydantic import BaseModel
 from passlib.context import CryptContext
+from auth import router as auth_router  # Importando as rotas de auth.py
 
 app = FastAPI()
 
@@ -53,6 +54,12 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 def get_data(db: Session = Depends(get_db)):
     sports = db.query(Sport).all()
     return [{"id": s.id, "name": s.name, "category": s.category} for s in sports]
+
+app.include_router(auth_router)
+
+@app.get("/")
+def home():
+    return {"message": "API está funcionando!"}
 
 # Rodar o servidor
 if __name__ == "__main__":

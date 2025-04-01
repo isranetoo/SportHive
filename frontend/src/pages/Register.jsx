@@ -12,7 +12,7 @@ function Register() {
     const navigate = useNavigate();
 
     const validateForm = () => {
-        if (!name || !email || !password || !confirmPassword) {
+        if (!name || !email || !password) {
             setError("Todos os campos são obrigatórios");
             return false;
         }
