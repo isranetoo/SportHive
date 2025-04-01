@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -56,3 +56,16 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     
     # Aqui você geraria o token, mas vamos focar na estrutura inicial
     return {"message": "Login bem-sucedido!"}
+
+@router.get("/profile")
+def get_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    # Aqui estamos assumindo que o token é um JWT e que você pode decodificar ele para obter o usuário
+    # Caso você esteja usando outra estratégia de autenticação, ajuste conforme necessário.
+
+    # Exemplo simples de validação
+    user = db.query(User).filter(User.token == token).first()
+    
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado")
+
+    return {"name": user.name, "email": user.email}
