@@ -5,6 +5,10 @@ import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import SportsSection from "./components/SportsSection";
 import HighlightsSection from "./components/HighlightsSection";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
 
 function App() {
     const [loading, setLoading] = useState(true);
@@ -27,7 +31,7 @@ function App() {
         loadData();
     }, []);
 
-    return (
+    const HomePage = () => (
         <div className="flex flex-col min-h-screen w-full bg-gray-50">
             <Navbar />
             <main className="flex-grow w-full">
@@ -37,6 +41,17 @@ function App() {
             </main>
             <Footer />
         </div>
+    );
+
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/profile" element={<Profile />} />
+            </Routes>
+        </BrowserRouter>
     );
 }
 

@@ -1,36 +1,58 @@
-import json
-import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from database import get_db
+from models import Sport, User
+from pydantic import BaseModel
+from passlib.context import CryptContext
 
 app = FastAPI()
 
-# Permitir que o frontend (React) acesse o backend
+origins = [
+    "http://localhost:5173",  # Frontend local
+    "https://seu-dominio.com"  # 🔴 Adicione o domínio em produção
+]
+
+# Permitir acesso do frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Altere para o domínio do seu frontend em produção
+    allow_origins= origins,  # Altere para o domínio do seu frontend em produção
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Função para carregar dados do arquivo JSON
-def load_sports_data():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(current_dir, "data", "sports.json")
-    
-    try:
-        with open(json_path, 'r', encoding='utf-8') as file:
-            return json.load(file)
-    except Exception as e:
-        print(f"Erro ao carregar arquivo JSON: {e}")
-        # Retorna dados padrão caso haja erro na leitura do arquivo
-        return []
+# Configuração para hashing de senha
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Rota para enviar dados ao React
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+@app.post("/api/register")
+def register(user: UserRegister, db: Session = Depends(get_db)):
+    # Verificar se o email já está cadastrado
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+
+    # Criar novo usuário com senha hash
+    new_user = User(
+        name=user.name,
+        email=user.email,
+        hashed_password=pwd_context.hash(user.password),
+    )
+    db.add(new_user)
+    db.commit()
+
+    return {"message": "Usuário registrado com sucesso!"}
+
+# Rota para buscar os esportes do banco de dados
 @app.get("/api/dataset")
-def get_data():
-    return load_sports_data()
+def get_data(db: Session = Depends(get_db)):
+    sports = db.query(Sport).all()
+    return [{"id": s.id, "name": s.name, "category": s.category} for s in sports]
 
 # Rodar o servidor
 if __name__ == "__main__":
