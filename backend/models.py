@@ -7,8 +7,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    token = Column(String, unique=True, nullable=True)
-    hashed_password = Column(String, nullable=True)  # Add this line
+    hashed_password = Column(String, nullable=True)
 
 class Sport(Base):
     __tablename__ = "sports"

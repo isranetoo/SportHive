@@ -45,7 +45,14 @@ function Register() {
             // Redirecionar para login após cadastro
             navigate("/login");
         } catch (error) {
-            setError("Erro ao criar conta. Tente novamente.");
+            if (error.isDatabaseSchemaError) {
+                setError(error.userMessage);
+                // Log detailed error for developers
+                console.error("Erro de schema do banco de dados:", error.developerMessage);
+            } else {
+                setError(error.message || "Erro ao criar conta. Tente novamente.");
+            }
+            console.error("Erro de registro:", error);
         } finally {
             setLoading(false);
         }

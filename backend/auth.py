@@ -2,15 +2,25 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
 from database import get_db
 from models import User
 from pydantic import BaseModel
+from security import hash_password, verify_password
 
 router = APIRouter()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# JWT Configuration
+SECRET_KEY = "chave-super-segura"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 class UserRegister(BaseModel):
     name: str
@@ -21,10 +31,36 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
-def hash_password(password: str):
-    return pwd_context.hash(password)
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
-@router.post("/register")
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+@router.post("/api/register")
 def register(user: UserRegister, db: Session = Depends(get_db)):
     try:
         # Verifica se o e-mail já existe
@@ -47,25 +83,21 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/login")
+@router.post("/api/login", response_model=Token)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     # Verifica se o usuário existe no banco
     db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     
-    # Aqui você geraria o token, mas vamos focar na estrutura inicial
-    return {"message": "Login bem-sucedido!"}
-
-@router.get("/profile")
-def get_profile(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    # Aqui estamos assumindo que o token é um JWT e que você pode decodificar ele para obter o usuário
-    # Caso você esteja usando outra estratégia de autenticação, ajuste conforme necessário.
-
-    # Exemplo simples de validação
-    user = db.query(User).filter(User.token == token).first()
+    # Gera o token JWT
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": db_user.email}, expires_delta=access_token_expires
+    )
     
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado")
+    return {"access_token": access_token, "token_type": "bearer"}
 
-    return {"name": user.name, "email": user.email}
+@router.get("/api/profile")
+def get_profile(current_user: User = Depends(get_current_user)):
+    return {"name": current_user.name, "email": current_user.email}
