@@ -48,3 +48,39 @@ export const getProfile = async () => {
         headers: { Authorization: `Bearer ${token}` }
     });
 };
+
+// Nova função para verificar se o usuário está logado
+export const isLoggedIn = () => {
+    return localStorage.getItem("token") !== null;
+};
+
+// Função de logout aprimorada
+export const logout = () => {
+  // Limpar token e quaisquer outros dados de usuário
+  localStorage.clear();
+  
+  // Limpar também cookies, caso esteja usando
+  document.cookie.split(";").forEach(function(c) {
+    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
+  
+  return true;
+};
+
+// Nova função para obter dados do usuário atual
+export const getCurrentUser = async () => {
+    try {
+        if (!isLoggedIn()) {
+            return null;
+        }
+        const response = await getProfile();
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao obter dados do usuário:", error);
+        // Se houver erro de autenticação, fazer logout
+        if (error.response && error.response.status === 401) {
+            logout();
+        }
+        return null;
+    }
+};
