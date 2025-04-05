@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import Tennis from "./pages/Tennis";
 
 function App() {
     const [loading, setLoading] = useState(true);
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/tennis" element={<Tennis />} />
             </Routes>
         </BrowserRouter>
     );

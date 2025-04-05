@@ -1,10 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from database import get_db
+from database import get_db, init_db
 from models import Sport, User
 from auth import router as auth_router  # Importando as rotas de auth.py
 from profile import router as profile_router  # Importando as rotas de profile.py
+import os
+
+# Inicializa o banco de dados
+init_db()
 
 app = FastAPI()
 
