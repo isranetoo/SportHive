@@ -1,26 +1,50 @@
 [
   {
     "id": 1,
-    "name": "Futebol",
-    "description": "Acompanhe as últimas notícias do mundo do futebol, tabelas de campeonatos, resultados e estatísticas.",
+    "name": "Soccer",
+    "description": "Follow the latest news from the soccer world, championship tables, results, and statistics.",
     "image": "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   },
   {
     "id": 2,
-    "name": "Tênis",
-    "description": "Fique por dentro dos torneios de tênis, rankings dos jogadores e análises de partidas.",
+    "name": "Tennis",
+    "description": "Stay up to date with tennis tournaments, player rankings, and match analyses.",
     "image": "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   },
   {
     "id": 3,
-    "name": "Golfe",
-    "description": "Acompanhe os principais torneios, resultados e rankings dos golfistas profissionais.",
+    "name": "Golf",
+    "description": "Follow the main tournaments, results, and rankings of professional golfers.",
     "image": "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   },
   {
     "id": 4,
-    "name": "Vôlei",
-    "description": "Campeonatos de vôlei, desempenho das seleções e notícias sobre os astros do esporte.",
+    "name": "Volleyball",
+    "description": "Volleyball championships, national team performances, and news about the sport's stars.",
     "image": "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+  },
+  {
+    "id": 5,
+    "name": "Chess",
+    "description": "Chess tournaments, player rankings, and analyses of famous matches.",
+    "image": "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+  },
+  {
+    "id": 6,
+    "name": "Basketball",
+    "description": "Follow basketball championships, team statistics, and the latest news about the sport's stars.",
+    "image": "https://images.unsplash.com/photo-1546519638-68e109acd618?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+  },
+  {
+    "id": 7,
+    "name": "Swimming",
+    "description": "Stay up to date with swimming competitions, athlete records, and Olympic performances.",
+    "image": "https://images.unsplash.com/photo-1530549387789-4c1017266635?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+  },
+  {
+    "id": 8,
+    "name": "Running",
+    "description": "Follow running events, marathon competitions, and track records from around the world.",
+    "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   }
 ]
