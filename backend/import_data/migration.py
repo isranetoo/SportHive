@@ -390,6 +390,221 @@ def import_data(sports_json_path=None, tennis_csv_path=None):
     finally:
         db.close()
 
+def update_head_to_head_stats(db):
+    """
+    Atualiza as estatísticas de confrontos diretos (head-to-head) entre jogadores
+    com base nas partidas existentes no banco de dados.
+    """
+    from models import TennisMatch, PlayerVsPlayer, Tournament
+    from sqlalchemy import and_, or_, text
+    
+    print("Atualizando estatísticas de confrontos diretos...")
+    
+    # Limpar a tabela para evitar duplicações e erros de contagem
+    try:
+        db.execute(text("DELETE FROM player_vs_player"))
+        print("Tabela player_vs_player limpa para recomputar estatísticas.")
+    except Exception as e:
+        print(f"Aviso: Não foi possível limpar a tabela player_vs_player: {e}")
+    
+    # Buscar todas as partidas de tênis
+    matches = db.query(TennisMatch).join(Tournament).all()
+    
+    # Contador para acompanhar progresso
+    processed_count = 0
+    updated_count = 0
+    
+    # Dicionário para armazenar os registros de h2h em memória
+    # e evitar múltiplas consultas ao banco
+    h2h_cache = {}
+    
+    # Para cada partida, atualizar as estatísticas de confronto direto
+    for match in matches:
+        processed_count += 1
+        
+        # Garantir que player1_id seja sempre o ID menor para evitar duplicações
+        p1_id = min(match.player1_id, match.player2_id)
+        p2_id = max(match.player1_id, match.player2_id)
+        
+        # Pular se os IDs forem iguais (não deveria acontecer)
+        if p1_id == p2_id:
+            continue
+        
+        # Criar uma chave para o cache
+        cache_key = (p1_id, p2_id)
+        
+        # Verificar se já temos este h2h em cache
+        if cache_key in h2h_cache:
+            h2h = h2h_cache[cache_key]
+        else:
+            # Buscar registro existente ou criar um novo
+            h2h = db.query(PlayerVsPlayer).filter(
+                and_(
+                    PlayerVsPlayer.player1_id == p1_id,
+                    PlayerVsPlayer.player2_id == p2_id
+                )
+            ).first()
+            
+            if not h2h:
+                # Criar um novo registro com todos os campos inicializados
+                h2h = PlayerVsPlayer(
+                    player1_id=p1_id,
+                    player2_id=p2_id,
+                    total_matches=0,
+                    player1_wins=0,
+                    player2_wins=0,
+                    hard_court_matches=0,
+                    hard_court_player1_wins=0,
+                    hard_court_player2_wins=0,
+                    clay_court_matches=0,
+                    clay_court_player1_wins=0,
+                    clay_court_player2_wins=0,
+                    grass_court_matches=0,
+                    grass_court_player1_wins=0,
+                    grass_court_player2_wins=0,
+                    carpet_court_matches=0,
+                    carpet_court_player1_wins=0,
+                    carpet_court_player2_wins=0,
+                    indoor_matches=0,
+                    indoor_player1_wins=0,
+                    indoor_player2_wins=0,
+                    outdoor_matches=0,
+                    outdoor_player1_wins=0,
+                    outdoor_player2_wins=0
+                )
+                db.add(h2h)
+                updated_count += 1
+            
+            # Adicionar ao cache
+            h2h_cache[cache_key] = h2h
+        
+        # Determinar quem ganhou a partida
+        if match.winner_id == p1_id:
+            # Player 1 ganhou
+            player1_won = True
+        elif match.winner_id == p2_id:
+            # Player 2 ganhou
+            player1_won = False
+        else:
+            # Isso não deveria acontecer, pular esta partida
+            continue
+        
+        # Garantir que os contadores não sejam None antes de incrementar
+        if h2h.total_matches is None:
+            h2h.total_matches = 0
+        h2h.total_matches += 1
+        
+        if player1_won:
+            if h2h.player1_wins is None:
+                h2h.player1_wins = 0
+            h2h.player1_wins += 1
+        else:
+            if h2h.player2_wins is None:
+                h2h.player2_wins = 0
+            h2h.player2_wins += 1
+        
+        # Atualizar estatísticas por superfície
+        court_type = match.tournament.surface.lower() if match.tournament.surface else "unknown"
+        indoor_outdoor = match.tournament.court.lower() if match.tournament.court else "unknown"
+        
+        # Quadra dura
+        if "hard" in court_type:
+            if h2h.hard_court_matches is None:
+                h2h.hard_court_matches = 0
+            h2h.hard_court_matches += 1
+            
+            if player1_won:
+                if h2h.hard_court_player1_wins is None:
+                    h2h.hard_court_player1_wins = 0
+                h2h.hard_court_player1_wins += 1
+            else:
+                if h2h.hard_court_player2_wins is None:
+                    h2h.hard_court_player2_wins = 0
+                h2h.hard_court_player2_wins += 1
+        
+        # Saibro
+        elif "clay" in court_type:
+            if h2h.clay_court_matches is None:
+                h2h.clay_court_matches = 0
+            h2h.clay_court_matches += 1
+            
+            if player1_won:
+                if h2h.clay_court_player1_wins is None:
+                    h2h.clay_court_player1_wins = 0
+                h2h.clay_court_player1_wins += 1
+            else:
+                if h2h.clay_court_player2_wins is None:
+                    h2h.clay_court_player2_wins = 0
+                h2h.clay_court_player2_wins += 1
+        
+        # Grama
+        elif "grass" in court_type:
+            if h2h.grass_court_matches is None:
+                h2h.grass_court_matches = 0
+            h2h.grass_court_matches += 1
+            
+            if player1_won:
+                if h2h.grass_court_player1_wins is None:
+                    h2h.grass_court_player1_wins = 0
+                h2h.grass_court_player1_wins += 1
+            else:
+                if h2h.grass_court_player2_wins is None:
+                    h2h.grass_court_player2_wins = 0
+                h2h.grass_court_player2_wins += 1
+        
+        # Carpete
+        elif "carpet" in court_type:
+            if h2h.carpet_court_matches is None:
+                h2h.carpet_court_matches = 0
+            h2h.carpet_court_matches += 1
+            
+            if player1_won:
+                if h2h.carpet_court_player1_wins is None:
+                    h2h.carpet_court_player1_wins = 0
+                h2h.carpet_court_player1_wins += 1
+            else:
+                if h2h.carpet_court_player2_wins is None:
+                    h2h.carpet_court_player2_wins = 0
+                h2h.carpet_court_player2_wins += 1
+        
+        # Indoor/Outdoor
+        if "indoor" in indoor_outdoor:
+            if h2h.indoor_matches is None:
+                h2h.indoor_matches = 0
+            h2h.indoor_matches += 1
+            
+            if player1_won:
+                if h2h.indoor_player1_wins is None:
+                    h2h.indoor_player1_wins = 0
+                h2h.indoor_player1_wins += 1
+            else:
+                if h2h.indoor_player2_wins is None:
+                    h2h.indoor_player2_wins = 0
+                h2h.indoor_player2_wins += 1
+                
+        elif "outdoor" in indoor_outdoor:
+            if h2h.outdoor_matches is None:
+                h2h.outdoor_matches = 0
+            h2h.outdoor_matches += 1
+            
+            if player1_won:
+                if h2h.outdoor_player1_wins is None:
+                    h2h.outdoor_player1_wins = 0
+                h2h.outdoor_player1_wins += 1
+            else:
+                if h2h.outdoor_player2_wins is None:
+                    h2h.outdoor_player2_wins = 0
+                h2h.outdoor_player2_wins += 1
+        
+        # Mostrar progresso a cada 100 partidas
+        if processed_count % 100 == 0:
+            print(f"Processadas {processed_count} partidas...")
+    
+    # Realizar commit periódico para evitar transações muito grandes
+    db.commit()
+    print(f"Estatísticas de confrontos diretos atualizadas: {updated_count} novos registros criados.")
+    return processed_count
+
 def update_statistics():
     """
     Atualiza estatísticas após importação de dados
@@ -418,6 +633,11 @@ def update_statistics():
         try:
             print("Atualizando estatísticas das partidas...")
             update_player_tournament_stats(db)
+            
+            # Adicionar chamada para atualizar os confrontos diretos
+            print("Atualizando estatísticas de confrontos diretos...")
+            update_head_to_head_stats(db)
+            
             print("Calculando rankings ELO iniciais...")
             calculate_initial_elo(db)
             db.commit()
@@ -435,6 +655,25 @@ def update_statistics():
         print("1. Verifique se o arquivo import_tennis_data.py existe no diretório import_data")
         print("2. Certifique-se de que o arquivo contém as funções update_player_tournament_stats e calculate_initial_elo")
         print("3. Se o arquivo não existir, você pode criar um arquivo vazio ou copiar as funções de outro lugar")
+        
+        # Tentar executar apenas o update de confrontos diretos
+        print("\nTentando atualizar apenas as estatísticas de confrontos diretos...")
+        try:
+            from database import SessionLocal
+            db = SessionLocal()
+            try:
+                updated = update_head_to_head_stats(db)
+                db.commit()
+                print(f"✅ Atualização de confrontos diretos concluída com sucesso! ({updated} partidas processadas)")
+            except Exception as e:
+                db.rollback()
+                print(f"Erro ao atualizar confrontos diretos: {e}")
+                import traceback
+                traceback.print_exc()
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"Erro ao conectar ao banco de dados: {e}")
 
 if __name__ == "__main__":
     import argparse
