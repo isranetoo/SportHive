@@ -1,6 +1,7 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.sql import text
 
 # Verificar o ambiente através de variável de ambiente
 USE_SQLITE = os.getenv("USE_SQLITE", "False").lower() in ("true", "1", "t")
@@ -30,3 +31,38 @@ def get_db():
 def init_db():
     """Inicializa o banco de dados criando todas as tabelas definidas"""
     Base.metadata.create_all(bind=engine)
+
+def recreate_db():
+    """Recria todas as tabelas, apagando as existentes primeiro"""
+    # Drop all tables first
+    Base.metadata.drop_all(bind=engine)
+    
+    # For PostgreSQL, we need to manually drop sequences to avoid conflicts
+    if not USE_SQLITE:
+        conn = engine.connect()
+        try:
+            # Get a list of sequences that might be left over
+            result = conn.execute(text(
+                "SELECT relname FROM pg_class WHERE relkind = 'S' AND relname LIKE '%_id_seq'"
+            ))
+            sequences = [row[0] for row in result]
+            
+            # Drop each sequence
+            for seq in sequences:
+                conn.execute(text(f"DROP SEQUENCE IF EXISTS {seq} CASCADE"))
+            
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Error dropping sequences: {e}")
+        finally:
+            conn.close()
+    
+    # Now create all tables
+    Base.metadata.create_all(bind=engine)
+
+def table_has_column(table_name, column_name):
+    """Verifica se uma tabela possui determinada coluna"""
+    inspector = inspect(engine)
+    columns = [c['name'] for c in inspector.get_columns(table_name)]
+    return column_name in columns
