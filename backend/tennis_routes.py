@@ -87,6 +87,7 @@ class DetailedPlayerTournamentStats(BaseModel):
 class HeadToHeadDetailedModel(BaseModel):
     player1: PlayerModel
     player2: PlayerModel
+    matchup_description: str  # Added field
     total_matches: int
     player1_wins: int
     player2_wins: int
@@ -205,11 +206,10 @@ def get_player_tournament_stats(
         for result in results
     ]
 
-@router.get("/api/tennis/head-to-head")
-def get_head_to_head(player1_id: int, player2_id: int, tournament_id: Optional[int] = None, db: Session = Depends(get_db)):
+@router.get("/api/tennis/head-to-head", response_model=Dict[str, Any])
+def get_head_to_head(player1_id: int, player2_id: int, db: Session = Depends(get_db)):
     """
     Obter estatísticas de confronto direto entre dois jogadores.
-    Pode filtrar por torneio específico.
     """
     # Verificar se os jogadores existem
     player1 = db.query(Player).filter(Player.id == player1_id).first()
@@ -223,9 +223,6 @@ def get_head_to_head(player1_id: int, player2_id: int, tournament_id: Optional[i
         ((TennisMatch.player1_id == player1_id) & (TennisMatch.player2_id == player2_id)) |
         ((TennisMatch.player1_id == player2_id) & (TennisMatch.player2_id == player1_id))
     )
-    
-    if tournament_id:
-        query = query.filter(TennisMatch.tournament_id == tournament_id)
     
     matches = query.all()
     
@@ -250,18 +247,26 @@ def get_head_to_head(player1_id: int, player2_id: int, tournament_id: Optional[i
         else:
             matches_by_tournament[match.tournament.name]["player2_wins"] += 1
     
+    h2h = db.query(PlayerVsPlayer).filter(
+        ((PlayerVsPlayer.player1_id == player1_id) & (PlayerVsPlayer.player2_id == player2_id)) |
+        ((PlayerVsPlayer.player1_id == player2_id) & (PlayerVsPlayer.player2_id == player1_id))
+    ).first()
+    
+    if not h2h:
+        raise HTTPException(status_code=404, detail="Confronto direto não encontrado")
+    
     return {
         "player1": {
-            "id": player1.id,
-            "name": player1.name
+            "id": h2h.player1_id,
+            "name": h2h.player1_name
         },
         "player2": {
-            "id": player2.id,
-            "name": player2.name
+            "id": h2h.player2_id,
+            "name": h2h.player2_name
         },
-        "total_matches": total_matches,
-        "player1_wins": player1_wins,
-        "player2_wins": player2_wins,
+        "total_matches": h2h.total_matches,
+        "player1_wins": h2h.player1_wins,
+        "player2_wins": h2h.player2_wins,
         "matches_by_tournament": matches_by_tournament
     }
 
@@ -376,6 +381,7 @@ def get_detailed_head_to_head(player1_id: int, player2_id: int, db: Session = De
         return {
             "player1": player1,
             "player2": player2,
+            "matchup_description": f"{player1.name} vs {player2.name}",  # Added field
             "total_matches": 0,
             "player1_wins": 0,
             "player2_wins": 0,
@@ -478,7 +484,6 @@ def get_detailed_head_to_head(player1_id: int, player2_id: int, db: Session = De
     
     tournaments_results = query.all()
     tournaments = {}
-    
     for result in tournaments_results:
         tournaments[result.name] = {
             "id": result.id,
@@ -490,6 +495,7 @@ def get_detailed_head_to_head(player1_id: int, player2_id: int, db: Session = De
     return {
         "player1": player1,
         "player2": player2,
+        "matchup_description": f"{player1.name} vs {player2.name}",  # Populate new field
         "total_matches": h2h.total_matches,
         "player1_wins": player1_wins,
         "player2_wins": player2_wins,
@@ -508,7 +514,7 @@ def get_top_players(surface: Optional[str] = None, limit: int = 20, db: Session 
     Obter os melhores jogadores classificados por ELO.
     Pode filtrar por tipo de superfície.
     """
-    query = db.query(PlayerElo, Player.name).join(Player).order_by()
+    query = db.query(PlayerElo, Player.name).join(Player).order_by(PlayerElo.elo_rating.desc())
     
     if surface:
         surface = surface.lower()

@@ -17,6 +17,26 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import create_engine, text, Column, Integer, String, Float, MetaData, Table
 from database import engine
 
+def table_has_column(table_name, column_name):
+    """
+    Verifica se uma coluna existe em uma tabela no banco de dados.
+    
+    Args:
+        table_name: Nome da tabela
+        column_name: Nome da coluna
+    
+    Returns:
+        bool: True se a coluna existir, False caso contrário
+    """
+    with engine.connect() as conn:
+        query = text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = :table_name AND column_name = :column_name
+        """)
+        result = conn.execute(query, {"table_name": table_name, "column_name": column_name})
+        return result.fetchone() is not None
+
 def run_migrations():
     """
     Executa as migrações necessárias para atualizar o banco de dados
@@ -25,106 +45,146 @@ def run_migrations():
     print("Iniciando migração do banco de dados...")
     
     # Conectar ao banco de dados
-    conn = engine.connect()
-    
-    try:
-        # Verificar se a tabela player_tournament existe
+    with engine.connect() as conn:
         try:
-            conn.execute(text("SELECT 1 FROM player_tournament LIMIT 1"))
-            player_tournament_exists = True
-        except Exception:
-            player_tournament_exists = False
+            # Verificar se a tabela player_tournament existe
+            try:
+                conn.execute(text("SELECT 1 FROM player_tournament LIMIT 1"))
+                player_tournament_exists = True
+            except Exception:
+                player_tournament_exists = False
+                
+            if player_tournament_exists:
+                # Adicionar as novas colunas se a tabela já existir
+                new_columns = [
+                    {"name": "losses", "type": "INTEGER", "default": 0},
+                    {"name": "hard_court_wins", "type": "INTEGER", "default": 0},
+                    {"name": "clay_court_wins", "type": "INTEGER", "default": 0},
+                    {"name": "grass_court_wins", "type": "INTEGER", "default": 0},
+                    {"name": "carpet_court_wins", "type": "INTEGER", "default": 0},
+                    {"name": "indoor_wins", "type": "INTEGER", "default": 0},
+                    {"name": "outdoor_wins", "type": "INTEGER", "default": 0},
+                    {"name": "elo_rating", "type": "FLOAT", "default": 1500.0}
+                ]
+                
+                for column in new_columns:
+                    if not table_has_column("player_tournament", column["name"]):
+                        conn.execute(text(
+                            f"ALTER TABLE player_tournament ADD COLUMN {column['name']} {column['type']} DEFAULT {column['default']}"
+                        ))
+                        print(f"Coluna {column['name']} adicionada à tabela player_tournament.")
+                    else:
+                        print(f"Coluna {column['name']} já existe na tabela player_tournament.")
             
-        if (player_tournament_exists):
-            # Adicionar as novas colunas se a tabela já existir
-            new_columns = [
-                {"name": "losses", "type": "INTEGER", "default": 0},
-                {"name": "hard_court_wins", "type": "INTEGER", "default": 0},
-                {"name": "clay_court_wins", "type": "INTEGER", "default": 0},
-                {"name": "grass_court_wins", "type": "INTEGER", "default": 0},
-                {"name": "carpet_court_wins", "type": "INTEGER", "default": 0},
-                {"name": "indoor_wins", "type": "INTEGER", "default": 0},
-                {"name": "outdoor_wins", "type": "INTEGER", "default": 0},
-                {"name": "elo_rating", "type": "FLOAT", "default": 1500.0}
+            # Criar tabela player_vs_player se não existir
+            try:
+                conn.execute(text("SELECT 1 FROM player_vs_player LIMIT 1"))
+                print("Tabela player_vs_player já existe.")
+            except Exception:
+                conn.execute(text("""
+                    CREATE TABLE player_vs_player (
+                        id SERIAL PRIMARY KEY,
+                        player1_id INTEGER NOT NULL REFERENCES players(id),
+                        player2_id INTEGER NOT NULL REFERENCES players(id),
+                        total_matches INTEGER DEFAULT 0,
+                        player1_wins INTEGER DEFAULT 0,
+                        player2_wins INTEGER DEFAULT 0,
+                        hard_court_matches INTEGER DEFAULT 0,
+                        hard_court_player1_wins INTEGER DEFAULT 0,
+                        hard_court_player2_wins INTEGER DEFAULT 0,
+                        clay_court_matches INTEGER DEFAULT 0,
+                        clay_court_player1_wins INTEGER DEFAULT 0,
+                        clay_court_player2_wins INTEGER DEFAULT 0,
+                        grass_court_matches INTEGER DEFAULT 0,
+                        grass_court_player1_wins INTEGER DEFAULT 0,
+                        grass_court_player2_wins INTEGER DEFAULT 0,
+                        carpet_court_matches INTEGER DEFAULT 0,
+                        carpet_court_player1_wins INTEGER DEFAULT 0,
+                        carpet_court_player2_wins INTEGER DEFAULT 0,
+                        indoor_matches INTEGER DEFAULT 0,
+                        indoor_player1_wins INTEGER DEFAULT 0,
+                        indoor_player2_wins INTEGER DEFAULT 0,
+                        outdoor_matches INTEGER DEFAULT 0,
+                        outdoor_player1_wins INTEGER DEFAULT 0,
+                        outdoor_player2_wins INTEGER DEFAULT 0
+                    )
+                """))
+                print("Tabela player_vs_player criada.")
+            
+            # Criar tabela player_elo se não existir
+            try:
+                conn.execute(text("SELECT 1 FROM player_elo LIMIT 1"))
+                print("Tabela player_elo já existe.")
+            except Exception:
+                conn.execute(text("""
+                    CREATE TABLE player_elo (
+                        id SERIAL PRIMARY KEY,
+                        player_id INTEGER NOT NULL REFERENCES players(id),
+                        elo_rating FLOAT DEFAULT 1500.0,
+                        hard_court_elo FLOAT DEFAULT 1500.0,
+                        clay_court_elo FLOAT DEFAULT 1500.0,
+                        grass_court_elo FLOAT DEFAULT 1500.0,
+                        carpet_court_elo FLOAT DEFAULT 1500.0,
+                        indoor_elo FLOAT DEFAULT 1500.0,
+                        outdoor_elo FLOAT DEFAULT 1500.0,
+                        active BOOLEAN DEFAULT TRUE,
+                        last_updated DATE NULL
+                    )
+                """))
+                print("Tabela player_elo criada.")
+
+            # Adicionar novas colunas à tabela players
+            new_player_columns = [
+                {"name": "ranking", "type": "INTEGER", "default": None},
+                {"name": "country", "type": "VARCHAR", "default": None},
+                {"name": "titles", "type": "INTEGER", "default": 0},
+                {"name": "grand_slams", "type": "INTEGER", "default": 0},
+                {"name": "hand", "type": "VARCHAR", "default": None},
+                {"name": "img_url", "type": "VARCHAR", "default": None},
             ]
+            for column in new_player_columns:
+                if not table_has_column("players", column["name"]):
+                    # Handle NULL defaults by omitting DEFAULT clause
+                    if column["default"] is None:
+                        conn.execute(text(
+                            f"ALTER TABLE players ADD COLUMN {column['name']} {column['type']}"
+                        ))
+                    else:
+                        conn.execute(text(
+                            f"ALTER TABLE players ADD COLUMN {column['name']} {column['type']} DEFAULT {column['default']}"
+                        ))
+                    print(f"Coluna {column['name']} adicionada à tabela players.")
+                else:
+                    print(f"Coluna {column['name']} já existe na tabela players.")
+
+            # Adicionar novas colunas à tabela tournaments
+            new_tournament_columns = [
+                {"name": "location", "type": "VARCHAR", "default": None},
+                {"name": "date", "type": "VARCHAR", "default": None},
+                {"name": "prize", "type": "VARCHAR", "default": None},
+                {"name": "img_url", "type": "VARCHAR", "default": None},
+            ]
+            for column in new_tournament_columns:
+                if not table_has_column("tournaments", column["name"]):
+                    # Handle NULL defaults by omitting DEFAULT clause
+                    if column["default"] is None:
+                        conn.execute(text(
+                            f"ALTER TABLE tournaments ADD COLUMN {column['name']} {column['type']}"
+                        ))
+                    else:
+                        conn.execute(text(
+                            f"ALTER TABLE tournaments ADD COLUMN {column['name']} {column['type']} DEFAULT {column['default']}"
+                        ))
+                    print(f"Coluna {column['name']} adicionada à tabela tournaments.")
+                else:
+                    print(f"Coluna {column['name']} já existe na tabela tournaments.")
             
-            for column in new_columns:
-                try:
-                    # Verificar se a coluna já existe
-                    conn.execute(text(f"SELECT {column['name']} FROM player_tournament LIMIT 1"))
-                    print(f"Coluna {column['name']} já existe na tabela player_tournament.")
-                except Exception:
-                    # Adicionar a coluna se não existir
-                    conn.execute(text(
-                        f"ALTER TABLE player_tournament ADD COLUMN IF NOT EXISTS {column['name']} {column['type']} DEFAULT {column['default']}"
-                    ))
-                    print(f"Coluna {column['name']} adicionada à tabela player_tournament.")
-        
-        # Criar tabela player_vs_player se não existir
-        try:
-            conn.execute(text("SELECT 1 FROM player_vs_player LIMIT 1"))
-            print("Tabela player_vs_player já existe.")
-        except Exception:
-            conn.execute(text("""
-                CREATE TABLE player_vs_player (
-                    id SERIAL PRIMARY KEY,
-                    player1_id INTEGER NOT NULL REFERENCES players(id),
-                    player2_id INTEGER NOT NULL REFERENCES players(id),
-                    total_matches INTEGER DEFAULT 0,
-                    player1_wins INTEGER DEFAULT 0,
-                    player2_wins INTEGER DEFAULT 0,
-                    hard_court_matches INTEGER DEFAULT 0,
-                    hard_court_player1_wins INTEGER DEFAULT 0,
-                    hard_court_player2_wins INTEGER DEFAULT 0,
-                    clay_court_matches INTEGER DEFAULT 0,
-                    clay_court_player1_wins INTEGER DEFAULT 0,
-                    clay_court_player2_wins INTEGER DEFAULT 0,
-                    grass_court_matches INTEGER DEFAULT 0,
-                    grass_court_player1_wins INTEGER DEFAULT 0,
-                    grass_court_player2_wins INTEGER DEFAULT 0,
-                    carpet_court_matches INTEGER DEFAULT 0,
-                    carpet_court_player1_wins INTEGER DEFAULT 0,
-                    carpet_court_player2_wins INTEGER DEFAULT 0,
-                    indoor_matches INTEGER DEFAULT 0,
-                    indoor_player1_wins INTEGER DEFAULT 0,
-                    indoor_player2_wins INTEGER DEFAULT 0,
-                    outdoor_matches INTEGER DEFAULT 0,
-                    outdoor_player1_wins INTEGER DEFAULT 0,
-                    outdoor_player2_wins INTEGER DEFAULT 0
-                )
-            """))
-            print("Tabela player_vs_player criada.")
-        
-        # Criar tabela player_elo se não existir
-        try:
-            conn.execute(text("SELECT 1 FROM player_elo LIMIT 1"))
-            print("Tabela player_elo já existe.")
-        except Exception:
-            conn.execute(text("""
-                CREATE TABLE player_elo (
-                    id SERIAL PRIMARY KEY,
-                    player_id INTEGER NOT NULL REFERENCES players(id),
-                    elo_rating FLOAT DEFAULT 1500.0,
-                    hard_court_elo FLOAT DEFAULT 1500.0,
-                    clay_court_elo FLOAT DEFAULT 1500.0,
-                    grass_court_elo FLOAT DEFAULT 1500.0,
-                    carpet_court_elo FLOAT DEFAULT 1500.0,
-                    indoor_elo FLOAT DEFAULT 1500.0,
-                    outdoor_elo FLOAT DEFAULT 1500.0,
-                    active BOOLEAN DEFAULT TRUE,
-                    last_updated DATE NULL
-                )
-            """))
-            print("Tabela player_elo criada.")
-        
-        conn.commit()
-        print("Migração concluída com sucesso!")
-        
-    except Exception as e:
-        conn.rollback()
-        print(f"Erro durante a migração: {e}")
-    finally:
-        conn.close()
+            conn.commit()
+            print("Migração concluída com sucesso!")
+            
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro durante a migração: {e}")
 
 def import_data(sports_json_path=None, tennis_csv_path=None):
     """

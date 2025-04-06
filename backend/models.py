@@ -75,9 +75,21 @@ class PlayerVsPlayer(Base):
     outdoor_player1_wins = Column(Integer, default=0)
     outdoor_player2_wins = Column(Integer, default=0)
     
+    matchup_description = Column(String, nullable=True)  # New field
+    
     # Relacionamentos
     player1 = relationship("Player", foreign_keys=[player1_id], backref="head_to_head_as_player1")
     player2 = relationship("Player", foreign_keys=[player2_id], backref="head_to_head_as_player2")
+
+    @property
+    def player1_name(self):
+        """Retorna o nome do jogador 1"""
+        return self.player1.name if self.player1 else None
+
+    @property
+    def player2_name(self):
+        """Retorna o nome do jogador 2"""
+        return self.player2.name if self.player2 else None
 
 class PlayerElo(Base):
     __tablename__ = "player_elo"
@@ -103,6 +115,12 @@ class Player(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
+    ranking = Column(Integer, nullable=True)  # Ranking do jogador
+    country = Column(String, nullable=True)  # País do jogador
+    titles = Column(Integer, default=0)  # Número de títulos
+    grand_slams = Column(Integer, default=0)  # Número de Grand Slams
+    hand = Column(String, nullable=True)  # Mão dominante (esquerda/direita)
+    img_url = Column(String, nullable=True)  # URL da imagem do jogador
     
     # Relationships
     matches_as_player1 = relationship("TennisMatch", foreign_keys="TennisMatch.player1_id", back_populates="player1")
@@ -156,6 +174,10 @@ class Tournament(Base):
     series = Column(String, nullable=True)
     court = Column(String, nullable=True)
     surface = Column(String, nullable=True)
+    location = Column(String, nullable=True)  # Localização do torneio
+    date = Column(String, nullable=True)  # Data do torneio
+    prize = Column(String, nullable=True)  # Prêmio do torneio
+    img_url = Column(String, nullable=True)  # URL da imagem do torneio
     
     # Relationships
     matches = relationship("TennisMatch", back_populates="tournament")
@@ -174,13 +196,13 @@ class TennisMatch(Base):
     player1_id = Column(Integer, ForeignKey("players.id"), nullable=False)
     player2_id = Column(Integer, ForeignKey("players.id"), nullable=False)
     winner_id = Column(Integer, ForeignKey("players.id"), nullable=False)
+    score = Column(String, nullable=True)
     rank1 = Column(Integer, nullable=True)
     rank2 = Column(Integer, nullable=True)
     pts1 = Column(Integer, nullable=True)
     pts2 = Column(Integer, nullable=True)
     odd1 = Column(Float, nullable=True)
     odd2 = Column(Float, nullable=True)
-    score = Column(String, nullable=True)
     
     # Relationships
     tournament = relationship("Tournament", back_populates="matches")
