@@ -1,6 +1,7 @@
 import React from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { Link } from 'react-router-dom'
 
 const Tennis = () => {
   return (
@@ -16,9 +17,9 @@ const Tennis = () => {
               <p className="text-xl text-blue-100 mb-8">
                 Um esporte de raquete que combina elegância, estratégia e potência em quadras de diversos tipos ao redor do mundo.
               </p>
-              <button className="bg-white text-blue-600 hover:bg-blue-50 py-3 px-6 rounded-lg font-medium transition-colors">
+              <Link to="/tennis/tournaments" className="bg-white text-blue-600 hover:bg-blue-50 py-3 px-6 rounded-lg font-medium transition-colors">
                 Explorar Torneios
-              </button>
+              </Link>
             </div>
           </div>
           <div className="absolute right-0 bottom-0 w-1/3 h-full opacity-10">
@@ -27,6 +28,29 @@ const Tennis = () => {
               alt="Tennis player silhouette" 
               className="w-full h-full object-cover object-center"
             />
+          </div>
+        </section>
+
+        {/* Tennis Navigation */}
+        <section className="py-8 bg-white shadow-md">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link to="/tennis/tournaments" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                Torneios
+              </Link>
+              <Link to="/tennis/players" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                Jogadores
+              </Link>
+              <Link to="/tennis/matches" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                Partidas
+              </Link>
+              <Link to="/tennis/ranking" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                Elo Ranking
+              </Link>
+              <Link to="/tennis/head-to-head" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                Head to Head
+              </Link>
+            </div>
           </div>
         </section>
 
