@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Float, ForeignKey, Table, Boolean
+from sqlalchemy import Column, Integer, String, Date, Float, ForeignKey, Table, Boolean, select, or_
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -90,6 +90,68 @@ class PlayerVsPlayer(Base):
     def player2_name(self):
         """Retorna o nome do jogador 2"""
         return self.player2.name if self.player2 else None
+    
+    # Novo método para obter partidas por torneio
+    def get_matches_by_tournament(self, db):
+        """Retorna as partidas entre os dois jogadores agrupadas por torneio"""
+        from sqlalchemy import or_, and_, func
+        
+        matches_by_tournament = db.query(
+            Tournament.id,
+            Tournament.name,
+            func.count(TennisMatch.id).label('match_count')
+        ).join(
+            TennisMatch, 
+            Tournament.id == TennisMatch.tournament_id
+        ).filter(
+            or_(
+                and_(
+                    TennisMatch.player1_id == self.player1_id,
+                    TennisMatch.player2_id == self.player2_id
+                ),
+                and_(
+                    TennisMatch.player1_id == self.player2_id,
+                    TennisMatch.player2_id == self.player1_id
+                )
+            )
+        ).group_by(
+            Tournament.id,
+            Tournament.name
+        ).all()
+        
+        return matches_by_tournament
+    
+    # Propriedades para facilitar o acesso às percentagens de vitória
+    @property
+    def player1_win_percentage(self):
+        """Percentagem de vitórias do jogador 1"""
+        if self.total_matches == 0:
+            return 0
+        return (self.player1_wins / self.total_matches) * 100
+    
+    @property
+    def player2_win_percentage(self):
+        """Percentagem de vitórias do jogador 2"""
+        if self.total_matches == 0:
+            return 0
+        return (self.player2_wins / self.total_matches) * 100
+    
+    @property
+    def rivalry_summary(self):
+        """Resumo da rivalidade entre os jogadores"""
+        if self.total_matches == 0:
+            return f"Sem confrontos entre {self.player1_name} e {self.player2_name}"
+            
+        diff = abs(self.player1_wins - self.player2_wins)
+        
+        if diff == 0:
+            return f"Rivalidade equilibrada: {self.player1_wins}-{self.player2_wins}"
+        
+        leading_player = self.player1_name if self.player1_wins > self.player2_wins else self.player2_name
+        leading_wins = max(self.player1_wins, self.player2_wins)
+        trailing_wins = min(self.player1_wins, self.player2_wins)
+        
+        return f"{leading_player} lidera {leading_wins}-{trailing_wins}"
 
 class PlayerElo(Base):
     __tablename__ = "player_elo"
@@ -165,6 +227,96 @@ class Player(Base):
             'wins': 0,
             'losses': 0
         }
+    
+    # Novos métodos para relacionar jogadores, torneios e confrontos
+    def get_tournament_stats(self, tournament_id, db):
+        """Retorna estatísticas do jogador em um torneio específico"""
+        from sqlalchemy import and_
+        stats = db.execute(
+            select([player_tournament]).where(
+                and_(
+                    player_tournament.c.player_id == self.id,
+                    player_tournament.c.tournament_id == tournament_id
+                )
+            )
+        ).first()
+        return stats
+
+    def get_all_opponents(self, db):
+        """Retorna todos os oponentes que já enfrentou com estatísticas"""
+        # Busca todos os jogadores enfrentados como player1
+        h2h_as_player1 = db.query(PlayerVsPlayer).filter(
+            PlayerVsPlayer.player1_id == self.id
+        ).all()
+        
+        # Busca todos os jogadores enfrentados como player2
+        h2h_as_player2 = db.query(PlayerVsPlayer).filter(
+            PlayerVsPlayer.player2_id == self.id
+        ).all()
+        
+        opponents = []
+        
+        # Processa os dados onde é o player1
+        for h2h in h2h_as_player1:
+            opponents.append({
+                'opponent_id': h2h.player2_id,
+                'opponent_name': h2h.player2_name,
+                'matches': h2h.total_matches,
+                'wins': h2h.player1_wins,
+                'losses': h2h.player2_wins
+            })
+        
+        # Processa os dados onde é o player2
+        for h2h in h2h_as_player2:
+            opponents.append({
+                'opponent_id': h2h.player1_id,
+                'opponent_name': h2h.player1_name,
+                'matches': h2h.total_matches,
+                'wins': h2h.player2_wins,
+                'losses': h2h.player1_wins
+            })
+        
+        return opponents
+    
+    def get_matches_in_tournament(self, tournament_id, db):
+        """Retorna todas as partidas do jogador em um torneio específico"""
+        matches = db.query(TennisMatch).filter(
+            TennisMatch.tournament_id == tournament_id,
+            or_(
+                TennisMatch.player1_id == self.id,
+                TennisMatch.player2_id == self.id
+            )
+        ).all()
+        return matches
+
+    def get_most_common_opponents(self, limit=5, db=None):
+        """Retorna os oponentes mais frequentes"""
+        from sqlalchemy import func, or_, and_
+        
+        if db is None:
+            return []
+            
+        # Conta o número de partidas contra cada oponente
+        opponent_counts = db.query(
+            Player.id.label('opponent_id'),
+            Player.name.label('opponent_name'),
+            func.count(TennisMatch.id).label('match_count')
+        ).join(
+            TennisMatch,
+            or_(
+                and_(TennisMatch.player1_id == Player.id, TennisMatch.player2_id == self.id),
+                and_(TennisMatch.player2_id == Player.id, TennisMatch.player1_id == self.id)
+            )
+        ).filter(
+            Player.id != self.id
+        ).group_by(
+            Player.id, 
+            Player.name
+        ).order_by(
+            func.count(TennisMatch.id).desc()
+        ).limit(limit).all()
+        
+        return opponent_counts
 
 class Tournament(Base):
     __tablename__ = "tournaments"
@@ -184,6 +336,70 @@ class Tournament(Base):
     
     # Nova relação muitos-para-muitos com jogadores
     players = relationship("Player", secondary=player_tournament, back_populates="tournaments")
+    
+    # Novos métodos para relacionar torneios, jogadores e confrontos
+    def get_all_matches(self, db):
+        """Retorna todas as partidas do torneio"""
+        return db.query(TennisMatch).filter(TennisMatch.tournament_id == self.id).all()
+    
+    def get_player_stats(self, player_id, db):
+        """Retorna estatísticas de um jogador específico neste torneio"""
+        from sqlalchemy import and_
+        stats = db.execute(
+            select([player_tournament]).where(
+                and_(
+                    player_tournament.c.tournament_id == self.id,
+                    player_tournament.c.player_id == player_id
+                )
+            )
+        ).first()
+        return stats
+    
+    def get_top_performers(self, limit=5, db=None):
+        """Retorna os jogadores com melhor desempenho neste torneio"""
+        if db is None:
+            return []
+            
+        from sqlalchemy import desc
+        
+        query = select([
+            player_tournament.c.player_id,
+            Player.name,
+            player_tournament.c.wins,
+            player_tournament.c.appearances,
+            (player_tournament.c.wins * 100 / player_tournament.c.appearances).label('win_percentage')
+        ]).select_from(
+            player_tournament.join(
+                Player, 
+                player_tournament.c.player_id == Player.id
+            )
+        ).where(
+            player_tournament.c.tournament_id == self.id,
+            player_tournament.c.appearances > 0
+        ).order_by(
+            desc('win_percentage'), 
+            desc(player_tournament.c.wins)
+        ).limit(limit)
+        
+        return db.execute(query).all()
+    
+    def get_matchups(self, db):
+        """Retorna os confrontos diretos que aconteceram neste torneio"""
+        from sqlalchemy import func, and_, or_
+        
+        # Busca pares de jogadores que se enfrentaram neste torneio
+        matchups = db.query(
+            func.least(TennisMatch.player1_id, TennisMatch.player2_id).label('player1_id'),
+            func.greatest(TennisMatch.player1_id, TennisMatch.player2_id).label('player2_id'),
+            func.count(TennisMatch.id).label('matches_count')
+        ).filter(
+            TennisMatch.tournament_id == self.id
+        ).group_by(
+            'player1_id', 
+            'player2_id'
+        ).all()
+        
+        return matchups
 
 class TennisMatch(Base):
     __tablename__ = "tennis_matches"

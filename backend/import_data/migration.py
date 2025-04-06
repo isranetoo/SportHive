@@ -133,6 +133,26 @@ def run_migrations():
                 """))
                 print("Tabela player_elo criada.")
 
+            # Adicionar campo de descrição da rivalidade na tabela player_vs_player
+            if not table_has_column("player_vs_player", "matchup_description"):
+                conn.execute(text(
+                    "ALTER TABLE player_vs_player ADD COLUMN matchup_description VARCHAR"
+                ))
+                print("Coluna matchup_description adicionada à tabela player_vs_player.")
+
+            # Adicionar campos de data na tabela player_tournament para tracking histórico
+            if not table_has_column("player_tournament", "first_appearance"):
+                conn.execute(text(
+                    "ALTER TABLE player_tournament ADD COLUMN first_appearance DATE"
+                ))
+                print("Coluna first_appearance adicionada à tabela player_tournament.")
+
+            if not table_has_column("player_tournament", "last_appearance"):
+                conn.execute(text(
+                    "ALTER TABLE player_tournament ADD COLUMN last_appearance DATE"
+                ))
+                print("Coluna last_appearance adicionada à tabela player_tournament.")
+
             # Adicionar novas colunas à tabela players
             new_player_columns = [
                 {"name": "ranking", "type": "INTEGER", "default": None},
