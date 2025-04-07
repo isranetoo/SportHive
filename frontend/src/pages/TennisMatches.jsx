@@ -9,6 +9,8 @@ const TennisMatches = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const matchesPerPage = 40;
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -50,6 +52,13 @@ const TennisMatches = () => {
   // Em um ambiente real, isso viria do backend com filtros apropriados
   const upcomingMatches = matches.filter((match, index) => index % 3 === 0);
   const completedMatches = matches.filter((match, index) => index % 3 !== 0);
+
+  const paginateMatches = (matches) => {
+    const startIndex = (currentPage - 1) * matchesPerPage;
+    return matches.slice(startIndex, startIndex + matchesPerPage);
+  };
+
+  const totalPages = Math.ceil(matches.length / matchesPerPage);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -145,7 +154,7 @@ const TennisMatches = () => {
                   <>
                     <h2 className="text-2xl font-bold text-blue-900 mb-6">Próximas Partidas</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {upcomingMatches.length > 0 ? upcomingMatches.map((match) => (
+                      {paginateMatches(upcomingMatches).length > 0 ? paginateMatches(upcomingMatches).map((match) => (
                         <div key={match.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-gray-100">
                           <div className="p-4 bg-blue-50 border-b border-blue-100">
                             <div className="flex justify-between items-center">
@@ -212,7 +221,7 @@ const TennisMatches = () => {
                   <>
                     <h2 className="text-2xl font-bold text-blue-900 mb-6">Partidas Concluídas</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {completedMatches.length > 0 ? completedMatches.map((match) => (
+                      {paginateMatches(completedMatches).length > 0 ? paginateMatches(completedMatches).map((match) => (
                         <div key={match.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-gray-100">
                           <div className="p-4 bg-blue-50 border-b border-blue-100">
                             <div className="flex justify-between items-center">
@@ -301,6 +310,31 @@ const TennisMatches = () => {
                     </button>
                   </div>
                 )}
+
+                {/* Pagination Controls */}
+                <div className="flex justify-center items-center mt-8">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 mx-1 rounded-lg ${
+                      currentPage === 1 ? 'bg-gray-300 text-gray-500' : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    Anterior
+                  </button>
+                  <span className="px-4 py-2 mx-1 text-gray-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 mx-1 rounded-lg ${
+                      currentPage === totalPages ? 'bg-gray-300 text-gray-500' : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    Próxima
+                  </button>
+                </div>
               </>
             )}
           </div>
