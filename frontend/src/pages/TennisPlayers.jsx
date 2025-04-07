@@ -15,7 +15,8 @@ const TennisPlayers = () => {
     const fetchPlayers = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/tennis/players');
+        // Fixed API path from /tennis/players to /api/tennis/players
+        const response = await api.get('/api/tennis/players');
         setPlayers(response.data);
         setLoading(false);
       } catch (err) {
@@ -34,7 +35,8 @@ const TennisPlayers = () => {
                          (player.country && player.country.toLowerCase().includes(searchTerm.toLowerCase()));
     
     if (filter === 'all') return matchesSearch;
-    if (filter === 'grandSlam') return matchesSearch && player.grandSlams > 0;
+    // Note: These filters may need to be adjusted based on actual data properties
+    if (filter === 'grandSlam') return matchesSearch && player.grand_slams > 0;
     if (filter === 'top5') return matchesSearch && player.ranking <= 5;
     
     return matchesSearch;
@@ -175,6 +177,11 @@ const TennisPlayers = () => {
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="bg-gray-50 rounded-lg p-3 text-center">
+                            <div className="text-xs text-gray-500 uppercase">Jogador</div>
+                            <div className="text-md font-bold text-blue-600">{player.name}</div>
+                          </div>
+                          
                           <div className="bg-gray-50 rounded-lg p-3 text-center">
                             <div className="text-2xl font-bold text-blue-600">{player.age || "?"}</div>
                             <div className="text-xs text-gray-500 uppercase">Idade</div>

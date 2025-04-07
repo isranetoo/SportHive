@@ -15,7 +15,21 @@ const TennisRanking = () => {
       try {
         setLoading(true);
         const response = await api.get(`/api/tennis/top-players${surface ? `?surface=${surface}` : ''}`);
-        setRankingData(response.data);
+        
+        // Make sure each player has all required fields with defaults if missing
+        const processedData = response.data.map(player => ({
+          ...player,
+          player_name: player.player_name || "Unknown Player",
+          elo_rating: player.elo_rating || 1500,
+          hard_court_elo: player.hard_court_elo || 1500,
+          clay_court_elo: player.clay_court_elo || 1500,
+          grass_court_elo: player.grass_court_elo || 1500,
+          carpet_court_elo: player.carpet_court_elo || 1500,
+          indoor_elo: player.indoor_elo || 1500,
+          outdoor_elo: player.outdoor_elo || 1500
+        }));
+        
+        setRankingData(processedData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching ranking data:', err);
@@ -159,7 +173,9 @@ const TennisRanking = () => {
                             <div className="text-sm font-medium text-gray-900">{index + 1}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-blue-600">{player.player_name}</div>
+                            <Link to={`/tennis/players/${player.player_id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                              {player.player_name} {/* Changed from player_id to player_name */}
+                            </Link>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-gray-900">

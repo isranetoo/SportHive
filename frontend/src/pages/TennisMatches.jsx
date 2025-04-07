@@ -27,6 +27,16 @@ const TennisMatches = () => {
     fetchMatches();
   }, []);
 
+  // Format the date string to a readable format
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch (e) {
+      return dateString; // Return original string if parsing fails
+    }
+  };
+
   // Para fins de demonstração, vamos simular partidas futuras e completas
   // Em um ambiente real, isso viria do backend com filtros apropriados
   const upcomingMatches = matches.filter((match, index) => index % 3 === 0);
@@ -139,7 +149,7 @@ const TennisMatches = () => {
                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                {new Date(match.date).toLocaleDateString()}
+                                {formatDate(match.date)}
                               </div>
                             </div>
                           </div>
@@ -154,13 +164,17 @@ const TennisMatches = () => {
                                     className="w-full h-full object-cover" 
                                   />
                                 </div>
-                                <span className="font-medium text-lg">{match.player1.name}</span>
+                                <span className="font-medium text-lg">
+                                  {match.player1.name}
+                                </span>
                               </div>
                               <div className="text-center">
                                 <span className="text-xs text-gray-500 block mb-1">VS</span>
                               </div>
                               <div className="flex items-center">
-                                <span className="font-medium text-lg">{match.player2.name}</span>
+                                <span className="font-medium text-lg">
+                                  {match.player2.name}
+                                </span>
                                 <div className="w-12 h-12 rounded-full overflow-hidden ml-3 bg-gray-200">
                                   <img 
                                     src={`https://ui-avatars.com/api/?name=${encodeURIComponent(match.player2.name)}&background=0D8ABC&color=fff&size=256`} 
@@ -202,7 +216,7 @@ const TennisMatches = () => {
                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                {new Date(match.date).toLocaleDateString()}
+                                {formatDate(match.date)}
                               </div>
                             </div>
                           </div>

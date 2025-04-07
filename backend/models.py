@@ -318,6 +318,19 @@ class Player(Base):
         
         return opponent_counts
 
+    def to_dict(self):
+        """Retorna um dicionário com os dados do jogador"""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "ranking": self.ranking,
+            "country": self.country,
+            "titles": self.titles,
+            "grand_slams": self.grand_slams,
+            "hand": self.hand,
+            "img_url": self.img_url
+        }
+
 class Tournament(Base):
     __tablename__ = "tournaments"
 
@@ -425,3 +438,16 @@ class TennisMatch(Base):
     player1 = relationship("Player", foreign_keys=[player1_id], back_populates="matches_as_player1")
     player2 = relationship("Player", foreign_keys=[player2_id], back_populates="matches_as_player2")
     winner = relationship("Player", foreign_keys=[winner_id], back_populates="matches_as_winner")
+
+    def to_dict(self):
+        """Retorna um dicionário com os dados da partida"""
+        return {
+            "id": self.id,
+            "tournament_id": self.tournament_id,
+            "date": self.date,
+            "round": self.round,
+            "player1": self.player1.to_dict() if self.player1 else None,
+            "player2": self.player2.to_dict() if self.player2 else None,
+            "winner": self.winner.to_dict() if self.winner else None,
+            "score": self.score
+        }

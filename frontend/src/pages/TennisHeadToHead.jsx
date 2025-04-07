@@ -34,7 +34,8 @@ const TennisHeadToHead = () => {
         setLoading(true);
         setError(null);
         
-        const response = await axios.get(`/api/tennis/head-to-head-detailed?player1_id=${selectedPlayer1}&player2_id=${selectedPlayer2}`);
+        // Changed from axios.get to api.get
+        const response = await api.get(`/api/tennis/head-to-head-detailed?player1_id=${selectedPlayer1}&player2_id=${selectedPlayer2}`);
         setH2hData(response.data);
         setShowResults(true);
         setLoading(false);
@@ -181,6 +182,7 @@ const TennisHeadToHead = () => {
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row mb-8">
                     <div className="flex-1 text-center p-4">
+                      <div className="text-lg font-medium text-blue-800 mb-1">{h2hData.player1.name}</div>
                       <div className="text-5xl font-bold text-blue-600 mb-2">{h2hData.player1_wins}</div>
                       <div className="text-gray-500">Vitórias</div>
                     </div>
@@ -191,6 +193,7 @@ const TennisHeadToHead = () => {
                     </div>
                     
                     <div className="flex-1 text-center p-4">
+                      <div className="text-lg font-medium text-red-800 mb-1">{h2hData.player2.name}</div>
                       <div className="text-5xl font-bold text-red-600 mb-2">{h2hData.player2_wins}</div>
                       <div className="text-gray-500">Vitórias</div>
                     </div>
@@ -204,7 +207,11 @@ const TennisHeadToHead = () => {
                         <div>
                           <div className="flex justify-between mb-1">
                             <span className="font-medium text-gray-700">Quadra dura</span>
-                            <span className="text-gray-600">{h2hData.hard_court.player1_wins}-{h2hData.hard_court.player2_wins}</span>
+                            <span className="text-gray-600">
+                              <span className="text-blue-600">{h2hData.player1.name}: {h2hData.hard_court.player1_wins}</span>
+                              {" - "}
+                              <span className="text-red-600">{h2hData.player2.name}: {h2hData.hard_court.player2_wins}</span>
+                            </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2.5">
                             <div 

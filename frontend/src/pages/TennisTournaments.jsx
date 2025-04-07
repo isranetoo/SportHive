@@ -14,7 +14,19 @@ const TennisTournaments = () => {
       try {
         setLoading(true);
         const response = await api.get('/api/tennis/tournaments');
-        setTournaments(response.data);
+        
+        // Process tournament data to handle missing fields
+        const processedData = response.data.map(tournament => ({
+          ...tournament,
+          // Fallback values for optional fields
+          surface: tournament.surface || "Not specified",
+          location: tournament.location || null,
+          date: tournament.date || null,
+          prize: tournament.prize || null,
+          series: tournament.series || null
+        }));
+        
+        setTournaments(processedData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching tournaments data:', err);

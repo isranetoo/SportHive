@@ -13,7 +13,7 @@ class PlayerModel(BaseModel):
     name: str
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class TournamentModel(BaseModel):
     id: int
@@ -23,7 +23,7 @@ class TournamentModel(BaseModel):
     surface: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class TennisMatchModel(BaseModel):
     id: int
@@ -36,7 +36,7 @@ class TennisMatchModel(BaseModel):
     score: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class PlayerTournamentStats(BaseModel):
     player_id: int
@@ -48,7 +48,7 @@ class PlayerTournamentStats(BaseModel):
     best_round: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class PlayerEloModel(BaseModel):
     player_id: int
@@ -62,7 +62,7 @@ class PlayerEloModel(BaseModel):
     outdoor_elo: float
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class DetailedPlayerTournamentStats(BaseModel):
     player_id: int
@@ -82,7 +82,7 @@ class DetailedPlayerTournamentStats(BaseModel):
     elo_rating: float
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class HeadToHeadDetailedModel(BaseModel):
     player1: PlayerModel
@@ -100,7 +100,7 @@ class HeadToHeadDetailedModel(BaseModel):
     tournaments: Dict[str, Any]
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class PlayerTourneyMatchupsModel(BaseModel):
     tournament_id: int
@@ -108,7 +108,7 @@ class PlayerTourneyMatchupsModel(BaseModel):
     opponents: List[Dict[str, Any]]
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class TournamentMatchupsModel(BaseModel):
     player1_id: int
@@ -119,7 +119,7 @@ class TournamentMatchupsModel(BaseModel):
     tournament_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 class TournamentPlayerStatsModel(BaseModel):
     player_id: int
@@ -131,7 +131,7 @@ class TournamentPlayerStatsModel(BaseModel):
     tournament_name: str
     
     class Config:
-        orm_mode = True
+        from_attributes = True  # Updated from orm_mode
 
 @router.get("/api/tennis/players", response_model=List[PlayerModel])
 def get_players(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -227,7 +227,7 @@ def get_player_tournament_stats(
     return [
         {
             "player_id": result.player_id,
-            "player_name": result.player_name,
+            "player_name": result.player_name,  # Inclui o nome do jogador
             "tournament_id": result.tournament_id,
             "tournament_name": result.tournament_name,
             "appearances": result.appearances,
