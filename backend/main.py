@@ -5,7 +5,7 @@ from database import get_db, init_db
 from models import Sport, User
 from auth import router as auth_router  # Importando as rotas de auth.py
 from profile import router as profile_router  # Importando as rotas de profile.py
-from tennis_routes import router as tennis_router  # Importando as rotas de tênis
+from tennis_routes import router as tennis_router, add_cors_middleware  # Importando as rotas de tênis
 import os
 
 # Inicializa o banco de dados
@@ -13,19 +13,8 @@ init_db()
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",  # Frontend local
-    "https://seu-dominio.com"  # 🔴 Adicione o domínio em produção
-]
-
-# Permitir acesso do frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware
+add_cors_middleware(app)
 
 # Rota para buscar os esportes do banco de dados
 @app.get("/api/dataset")

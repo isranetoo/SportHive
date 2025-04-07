@@ -5,6 +5,7 @@ from models import Tournament, Player, TennisMatch, player_tournament, PlayerVsP
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from sqlalchemy import select, func, or_, and_
+from fastapi.middleware.cors import CORSMiddleware
 
 router = APIRouter()
 
@@ -170,7 +171,21 @@ def get_matches(
         query = query.join(Tournament).filter(Tournament.surface == surface)
     
     matches = query.offset(skip).limit(limit).all()
-    return matches
+    
+    # Serialize the date field as a string
+    return [
+        {
+            "id": match.id,
+            "tournament": match.tournament,
+            "date": match.date.isoformat(),  # Convert date to string
+            "round": match.round,
+            "player1": match.player1,
+            "player2": match.player2,
+            "winner": match.winner,
+            "score": match.score,
+        }
+        for match in matches
+    ]
 
 @router.get("/api/tennis/player/{player_id}/tournaments", response_model=List[TournamentModel])
 def get_player_tournaments(player_id: int, db: Session = Depends(get_db)):
@@ -966,3 +981,13 @@ def get_integrated_tennis_data(
         ]
     
     return result
+
+def add_cors_middleware(app):
+    """Add CORS middleware to the FastAPI app."""
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow all origins; restrict this in production
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
