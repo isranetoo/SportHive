@@ -1,0 +1,89 @@
+{
+  "players": [
+    {
+      "id": 1,
+      "name": "Rafael Nadal",
+      "ranking": 5,
+      "country": "Country A",
+      "titles": 10,
+      "grand_slams": 2,
+      "hand": "Right",
+      "img_url": "http://example.com/player1.jpg",
+      "elo_id": 1
+    },
+    {
+      "id": 2,
+      "name": "Roger Federer",
+      "ranking": 8,
+      "country": "Country B",
+      "titles": 5,
+      "grand_slams": 1,
+      "hand": "Left",
+      "img_url": "http://example.com/player2.jpg",
+      "elo_id": 2 
+    }
+  ],
+  "tournaments": [
+    {
+      "id": 1,
+      "name": "Tournament A",
+      "series": "Grand Slam",
+      "court": "Outdoor",
+      "surface": "Clay",
+      "location": "City A",
+      "date": "2023-05-01",
+      "prize": "$1,000,000",
+      "img_url": "http://example.com/tournamentA.jpg",
+      "matches": [1] 
+    }
+  ],
+  "matches": [
+    {
+      "id": 1,
+      "tournament_id": 1,
+      "date": "2023-05-02",
+      "round": "Quarterfinal",
+      "best_of": 3,
+      "player1_id": 1,
+      "player2_id": 2,
+      "winner_id": 1,
+      "score": "6-4, 7-5",
+      "rank1": 5,
+      "rank2": 8,
+      "pts1": 1200,
+      "pts2": 1100,
+      "odd1": 1.5,
+      "odd2": 2.5,
+      "player1_elo_id": 1, 
+      "player2_elo_id": 2  
+    }
+  ],
+  "player_elo": [
+    {
+      "id": 1,
+      "player_id": 1,
+      "elo_rating": 1520.0,
+      "hard_court_elo": 1500.0,
+      "clay_court_elo": 1550.0,
+      "grass_court_elo": 1480.0,
+      "carpet_court_elo": 1500.0,
+      "indoor_elo": 1490.0,
+      "outdoor_elo": 1530.0,
+      "active": true,
+      "last_updated": "2023-04-30"
+    },
+    {
+      "id": 2,
+      "player_id": 2,
+      "elo_rating": 1480.0,
+      "hard_court_elo": 1450.0,
+      "clay_court_elo": 1500.0,
+      "grass_court_elo": 1470.0,
+      "carpet_court_elo": 1480.0,
+      "indoor_elo": 1460.0,
+      "outdoor_elo": 1490.0,
+      "active": true,
+      "last_updated": "2023-04-30"
+    }
+  ]
+}

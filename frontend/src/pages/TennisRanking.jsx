@@ -14,12 +14,12 @@ const TennisRanking = () => {
     const fetchRanking = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/api/tennis/top-players${surface ? `?surface=${surface}` : ''}`);
+        const response = await api.get(`/top-players${surface ? `?surface=${surface}` : ''}`); // Ajuste do endpoint
         
         // Make sure each player has all required fields with defaults if missing
         const processedData = response.data.map(player => ({
           ...player,
-          player_name: player.player_name || "Unknown Player",
+          player_name: player.player_name || "Desconhecido",
           elo_rating: player.elo_rating || 1500,
           hard_court_elo: player.hard_court_elo || 1500,
           clay_court_elo: player.clay_court_elo || 1500,

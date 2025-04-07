@@ -13,19 +13,15 @@ const TennisTournaments = () => {
     const fetchTournaments = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/api/tennis/tournaments');
-        
-        // Process tournament data to handle missing fields
+        const response = await api.get('/tournaments'); // Ajuste do endpoint
         const processedData = response.data.map(tournament => ({
           ...tournament,
-          // Fallback values for optional fields
-          surface: tournament.surface || "Not specified",
-          location: tournament.location || null,
-          date: tournament.date || null,
-          prize: tournament.prize || null,
-          series: tournament.series || null
+          surface: tournament.surface || "Indefinido",
+          location: tournament.location || "Local não informado",
+          date: tournament.date || "Data não informada",
+          prize: tournament.prize || "Prêmio não informado",
+          imgUrl: tournament.img_url || `https://source.unsplash.com/featured/?tennis,${tournament.name}`
         }));
-        
         setTournaments(processedData);
         setLoading(false);
       } catch (err) {

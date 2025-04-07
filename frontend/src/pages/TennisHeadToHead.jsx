@@ -30,20 +30,24 @@ const TennisHeadToHead = () => {
 
   const handleCompare = async () => {
     if (selectedPlayer1 && selectedPlayer2) {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Changed from axios.get to api.get
-        const response = await api.get(`/api/tennis/head-to-head-detailed?player1_id=${selectedPlayer1}&player2_id=${selectedPlayer2}`);
-        setH2hData(response.data);
-        setShowResults(true);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching head-to-head data:', err);
-        setError('Failed to load head-to-head data. Please try again later.');
-        setLoading(false);
-      }
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await api.get(`/head-to-head-detailed?player1_id=${selectedPlayer1}&player2_id=${selectedPlayer2}`); // Ajuste do endpoint
+            const processedData = {
+                ...response.data,
+                player1: response.data.player1 || { name: "Desconhecido" },
+                player2: response.data.player2 || { name: "Desconhecido" },
+                tournaments: response.data.tournaments || {}
+            };
+            setH2hData(processedData);
+            setShowResults(true);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching head-to-head data:', err);
+            setError('Failed to load head-to-head data. Please try again later.');
+            setLoading(false);
+        }
     }
   };
 

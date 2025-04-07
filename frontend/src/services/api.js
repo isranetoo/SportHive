@@ -4,7 +4,7 @@ const API_URL = "http://127.0.0.1:8000/api/dataset";
 
 // Configure axios with base URL
 const api = axios.create({
-    baseURL: "http://127.0.0.1:8000/api"
+    baseURL: "http://127.0.0.1:8000/api/tennis" // Ajuste para corresponder ao backend
 });
 
 // Add an interceptor for development to return mock data

@@ -15,9 +15,17 @@ const TennisPlayers = () => {
     const fetchPlayers = async () => {
       try {
         setLoading(true);
-        // Fixed API path from /tennis/players to /api/tennis/players
-        const response = await api.get('/api/tennis/players');
-        setPlayers(response.data);
+        const response = await api.get('/players'); // Ajuste do endpoint
+        const processedData = response.data.map(player => ({
+          ...player,
+          country: player.country || "Desconhecido",
+          ranking: player.ranking || "N/A",
+          titles: player.titles || 0,
+          grandSlams: player.grand_slams || 0,
+          hand: player.hand || "Desconhecido",
+          imgUrl: player.img_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}`
+        }));
+        setPlayers(processedData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching players data:', err);

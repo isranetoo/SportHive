@@ -14,8 +14,17 @@ const TennisMatches = () => {
     const fetchMatches = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/api/tennis/matches');
-        setMatches(response.data);
+        const response = await api.get('/matches'); // Ajuste do endpoint
+        const processedData = response.data.map(match => ({
+          ...match,
+          player1: match.player1 || { name: "Desconhecido" },
+          player2: match.player2 || { name: "Desconhecido" },
+          winner: match.winner || { name: "Desconhecido" },
+          tournament: match.tournament || { name: "Torneio não informado" },
+          date: match.date || "Data não informada",
+          score: match.score || "Placar não informado"
+        }));
+        setMatches(processedData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching matches data:', err);
